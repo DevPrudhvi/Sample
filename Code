@@ -1,0 +1,687 @@
+public IOSDataResponse getIosQuestionnaires (String portfolioId) throws
+
+Exception { IOSDataResponse iosikeDataResponse =
+
+new IOSDataResponse(); String selectedAcountSysgenId =
+
+try {
+
+String locale =
+
+StringUtils.isBlank (stHeaders.getLocale()) ? LOCALE_EN: stHeaders.getLocale();
+
+String customerId =
+
+(stHeaders.getCustomerId() != null) ? stHeaders.getCustomerId() :
+
+log.info("In getIosIkeLandingInfo
+
+:: ios-ike customerId: {}", customerId); IOS InfoVersion ios Info = IOS InfoVersion(); new
+
+IOSIKEACCountInfo iosikeAccount Info
+
+new IOSIKEAccountInfo();
+
+String action IDContactRM = EnumIOSIKEActions. CONTACT_RM.getValue(); String actionValueContactRM = propertyUtil.getLocaleString(locale).equalsIgno
+
+reCase(Constants.LOCALE_EN) ? ios IkeActions InfoHashMapEn.get(actionIDContactR
+
+M) :
+
+iosIkeActionsInfoHashMapZh.get(actionIDContactR
+
+M);
+
+String actionIDUpdate =
+
+EnumIOSIKEActions. UPDATE.getValue(); String actionValueUpdate =
+
+propertyUtil.getLocaleString(locale).equalsIgno
+
+reCase(Constants.LOCALE_EN) ? iosIkeActions InfoHashMapEn.get(actionIDUpdate)
+
+: ios IkeActions InfoHashMapZh.get(actionIDUpdate);
+
+Predicate<ListItem>
+
+predicateAccountExist listItem -> =
+
+listItem.getAccountId().equalsIgnoreCase(portfo lioId);
+
+Predicate<ListItem>
+
+predicateAccountIdNProductCodeNSegmentMatch listItem ->
+
+(listItem.getAccountId().equalsIgnoreCase(portf olioId) &&
+
+ios IKEAllowable ProductCodes.contains(listItem.g etProductCode()) &&
+
+ios IKEAllowableCustomerSegments.contains(listIt
+
+em.getCustomerSegment())); Predicate<AttributesItem>
+
+predicateRiskProfile = attributesItem -> attributesItem.getKey().equalsIgnoreCase(IOS_RI SK PROFILE);
+
+Predicate<AttributesItem>
+
+predicateInvestmentProfile attributesItem -> = attributesItem.getKey().equalsIgnoreCase (IOS_IN VESTMENT PROFILE); Predicate<AttributesItem>
+
+predicateIOSExpiry Date = attributesItem ->
+
+attributesItem.getKey().equalsIgnoreCase(IOS_EX
+
+PIRY DATE);
+
+Predicate<AttributesItem>
+
+predicateIOSUpdateAllowed attributes Item ->
+
+=
+
+attributesItem.getKey().equalsIgnoreCase (IOS_UP DATE ALLOWED); Predicate<AttributesItem>
+
+predicateIKEUpdateAllowed = attributesItem -> attributesItem.getKey().equalsIgnoreCase(IKE_UP
+
+DATE ALLOWED);
+
+Predicate<PortfoliosItem>
+
+predicatePortFolioIdPreConditions portfolios Item -> portfoliosItem.getList().stream().anyMatch(pred icateAccountIdNProductCodeNSegmentMatch); =
+
+//call to getAccounts service
+
+Accounts Response accountsResponse (AccountsResponse)=
+
+accountsService.getAccounts (MediaType.APPLICATI ON_JSON_VALUE);
+
+boolean isSelectedPortFolioExist = accountsResponse.getPortfolios().stream().anyMa tch (predicatePortFolioIdPreConditions);
+
+if (!isSelectedPortFolioExist) {
+
+log.info("get ios-ike:: precondition failed: {}", portfolioId); throw new InputMismatchException("Selected portfolioId does't satisfy pre-conditions."); } else { log.info("get ios-ike:: precondition pass: {}", portfolioId);
+
+}
+
+accountsResponse.getPortfolios().forEach(portfo liosItem -> {
+
+portfoliosItem.getList().stream().filter(predic
+
+ateAccountExist).forEach (listItem -> { iosikeDataResponse.setSelectedAccountSysGenId(1 istItem.getAccountSysgenId());
+
+iosikeDataResponse.setIsJointAccountHolder((lis tItem.getAccountHolders () != null && listItem.getAccountHolders().size() > 1));
+
+iosikeAccount Info.setContainerId(listItem.getCo
+
+ntainerId());
+
+iosikeAccountInfo.setContainerSysGenId(listItem .getContainerSysgenId());
+
+AttributesItem
+
+riskProfileAttribute =
+
+listItem.getAttributes().stream().filter(predic ateRiskProfile).findFirst().orElse(null);
+
+iosInfo.setRiskProfile((riskProfileAttribute != null && riskProfileAttribute.getValue() !=
+
+null) ? ( (stHeaders.getLocale().equalsIgnoreCase (LOCALE
+
+ZH)) ? avaloqRiskProfileMappingHashMapZh.get((riskProf
+
+ileAttribute).getValue()): avaloqRiskProfileMappingHashMap.get((riskProfil eAttribute).getValue()) ): null);
+
+iosInfo.setRiskProfileId((riskProfileAttribute != null && riskProfileAttribute.getValue() != null) ? (
+
+(stHeaders.getLocale().equalsIgnoreCase(LOCALE ZH)) ? avaloqRiskProfileMappingHashMapZh.get((riskProf ileAttribute).getValue()): avaloqRiskProfileMappingHashMap.get((riskProfil eAttribute).getValue()) ): null);
+
+AttributesItem
+
+invetmentProfileAttribute = listItem.getAttributes().stream().filter(predic ateInvestmentProfile).findFirst().orElse(null);
+
+iosInfo.setInvestmentProfile((invetmentProfileA
+
+ttribute != null && invetmentProfileAttribute.getValue() != null) ? (stHeaders.getLocale().equalsIgnoreCase (LOCALE ZH) ?
+
+avaloqInvestmentProfileMappingHashMapZh.get(inv
+
+etmentProfileAttribute.getValue())
+
+:avaloqInvestmentProfileMappingHashMap.get(inve
+
+tment ProfileAttribute.getValue()) ) : null);
+
+iosInfo.setInvestmentProfileId((invetmentProfil eAttribute != null && invetmentProfileAttribute.getValue() != null) ? (stHeaders.getLocale().equalsIgnoreCase (LOCALE_
+
+ZH) ? avaloqInvestmentProfileMappingHashMapZh.get(inv
+
+etmentProfileAttribute.getValue()) : avaloqInvestmentProfileMappingHashMap.get(inve tment ProfileAttribute.getValue()) ) : null);
+
+AttributesItem
+
+iosExpiry DateAttribute = listItem.getAttributes().stream().filter(predic ateIOSExpiryDate).findFirst().orElse(null);
+
+iosInfo.setExpiryDate((iosExpiryDateAttribute != null && iosExpiry DateAttribute.getValue() != null)? iosExpiry DateAttribute.getValue(): null);
+
+listItem.getAccountHolders ().forEach (accountHol dersItem -> {
+
+iosikeDataResponse.getListOfAccount Holders ().pu t(accountHoldersItem.getCustomerId(), accountHoldersItem.getCustomerName());
+
+});
+
+});
+
+Predicate<ListItem>
+
+});
+
+predicateContainerIdAccounts listItem -> = listItem.getContainerId().equalsIgnoreCase(iosi keAccountInfo.getContainerId());
+
+accountsResponse.getPortfolios().forEach (portfo
+
+liosItem -> {
+
+portfolios Item.getList().stream().filter(predic ateContainerIdAccounts).forEach(listItem -> {
+
+iosikeAccountInfo.getAccountsList().add(new
+
+IOSIKEACCount(listItem.getAccountSysgenId(),
+
+listItem.getAccountId()));
+
+log.info("getAccount SysgenId : listItem.getAccountSysgenId());
+
+iosikeDataResponse.setSelectedAccountSysGenId (1 istItem.getAccountSysgenId());
+
+});
+
+});
+
+iosikeDataResponse.setAccountInfo(iosikeAccount Info);
+
+CompletableFuture<IOPQuestionnaires>
+
+iopQuestionnaires Completable Future = getIOPQuestionnaires FromWapi (stHeaders.getUuid( ), stHeaders.getCountry().toLowerCase(), wapiClientId, portfolioId);
+
+CompletableFuture<IOPQuestionnaires> rtaQuestionnaires CompletableFuture =
+
+getRTAQuestionnairesFromWapi (stHeaders.getUuid( ), stHeaders.getCountry().toLowerCase(),
+
+wapiClientId, portfolioId);
+
+CompletableFuture<IOPQuestionnaires>
+
+rtaQuestionnaires Completable Future = getRTAQuestionnairesFromWapi (stHeaders.getUuid( ), stHeaders.getCountry().toLowerCase(),
+
+wapiClientId, portfolioId); CompletableFuture<RmInfo>
+
+rmInfoCompletableFuture = getRmInfoFromWapi (stHeaders.getCountry().toLowe rCase(), wapiClientId, stHeaders.getUuid(), iosikeAccountInfo.getContainerId());
+
+RmInfo rmInfo =
+
+rmInfoCompletableFuture.get();
+
+if(rmInfo !=null) { IOSIKERMInfo iosikermInfo =
+
+new
+
+IOSIKERMInfo(rmInfo.getRm(), rmInfo.getRmEmail());
+
+iosInfo.setShowAdditionalDisclosure(StringUtils .isNotBlank (rmInfo.getCrossBorderRm())
+
+& &
+
+additional Disclosure Customer Locations.stream().
+
+anyMatch(rmInfo.getCrossBorderRm()
+
+:: equalsIgnoreCase));
+
+//Save RM info in DB
+
+List<IOSRenewalRMInfo> ios RenwalRMInfoList =
+
+iosRenewalRMInfoJPARepository.findByBaseNo(iosi keAccountInfo.getContainerId());
+
+if
+
+(CollectionUtils.isNotEmpty(iosRenwalRMInfoList )) {
+
+log.info("get ios-ike:: RM info entry exist for {} and updated",
+
+iosikeAccount Info.getContainerId());
+
+iosRenwalRMInfoList.forEach(iosRenwalRMInfo -> {
+
+ios RenwalRMInfo.setRmName (rmInfo.getRm());
+
+iosRenwalRMInfo.setRmMailId (rmInfo.getRmEmail() );
+
+iosRenewalRMInfoJPARepository.save(ios RenwalRMI nfo); });
+
+} else {
+
+log.info("get ios-ike:: RM
+
+info saved for {}", iosikeAccountInfo.getContainerId());
+
+ios RenewalRMInfoJPARepository.save(new IOSRenewalRMInfo (iosikeAccountInfo.getContainer Id(),
+
+rmInfo.getRm(),
+
+rmInfo.getRmEmail()));
+
+}
+
+}
+
+// Updating SectionList and
+
+Selected Answers only for COMPLETED and
+
+DIFFERENTPROFILE status iosInfo.setIosSectionsListV_2022 (locale.equalsI gnoreCase(Constants. LOCALE_ZH) ?
+
+iosSectionListZhV2022.getIosSectionsList() :
+
+iosSectionListEnV2022.getIosSectionsList() );
+
+iosInfo.setIosSectionsListV_2018 (locale.equalsI
+
+gnoreCase(Constants.LOCALE_ZH) ? iosSectionListZhV2018.getIosSectionsList():
+
+iosSectionsListENV2018.getIosSectionsList()); log.info("ios-iop Questionnaires setIosSectionsListV_2022 is :: {}", iosInfo.getIosSectionsListV_2022());
+
+Predicate<IOSIKERenwal>
+
+predicateCurrentUserInDBRecords iosikeRenwal
+
+= -> iosikeRenwal.getCustomerId().equalsIgnoreCase(c ustomerId);
+
+List<IOSIKERenwal> iosikeRenwalList=
+
+iosikeRenewalJPARepository.findByBaseNoAndStatu sIgnoreCase(iosikeAccountInfo.getContainerId(), DB_IOS_STATUS_PENDING);
+
+IOPQuestionnaires
+
+iopWapiQuestionnairesResponse =
+
+iopQuestionnaires CompletableFuture.get();
+
+log.info("iosikeRenwalList" + new
+
+Gson().toJson(iosikeRenwalList)); if(iosikeRenwalList != null
+
+& &
+
+iosikeRenwalList.size() > 1) { IOSIKERenwal
+
+iosikeRenwalCurrentUser =
+
+iosikeRenwalList.stream().filter(predicateCurre ntUserInDBRecords).findFirst().orElse(null);
+
+IOSUpdateRequest
+
+= new
+
+iosUpdateRequest
+
+Gson().fromJson(iosikeRenwalCurrentUser.getPayl oad(), IOS UpdateRequest.class); String newRiskProfile = calculateRiskProfile (iosUpdateRequest.getIOSSel
+
+ectedAnswers());
+
+String new Investment Profile =
+
+calculateInvestmentProfile(newRiskProfile,iosUp
+
+dateRequest.getIOSSelectedAnswers());
+
+iosInfo.setRiskProfile (newRiskProfile);
+
+iosInfo.setRiskProfileId (newRiskProfile);
+
+iosInfo.setInvestmentProfile(newInvestmentProfi
+
+le);
+
+ios Info.setInvestmentProfileId (newInvestmentPro file);
+
+iosInfo.setSelectedAnswers (ios UpdateRequest.get IOSSelectedAnswers ());
+
+}else {
+
+(iopWapiQuestionnairesResponse != null &&
+
+if
+
+CollectionUtils.isNotEmpty (iopWapiQuestionnaire SResponse.getQuestions())) {
+
+//TODO: Check this List<String>
+
+iosQuestionIDSExcludeList =
+
+propertyUtil.getConfigListValue(IOS_QUESTION_ID EXCLUDE_LIST);
+
+List<String>
+
+iosQuestionIDSExcludeList Dates = propertyUtil.getConfigListValue (IOS_ANSWER_ID_E XCLUDE_LIST_DATES);
+
+if(!iosQuestion IDs ExcludeList.contains(String.v alueOf(questList.getQuestCode()))
+
+iopWapiQuestionnairesResponse.getQuestions ().fo rEach (questList -> {
+
+if (!iosQuestion IDSExcludeList.contains(String.val
+
+ueOf(questList.getCode()))) { AnswerDetails
+
+answerDetails new AnswerDetails(); if
+
+=
+
+(!questList.getCode().equalsIgnoreCase("dbs $ios _sign_dt") && !questList.getCode().equalsIgnoreCase("dbs$ios_ iop_rm_cf_dt")) {
+
+if
+
+(!ios Question IDSExcludeListDates.contains(Strin g.valueOf(questList.getCode()))) { answerDetails.setQuestionId (String.valueOf(ques
+
+tList.getCode())); if
+
+(questList.getAnswers () != null) {
+
+questList.getAnswers().forEach(ansItemList -> {
+
+if
+
+(ansItemList.getCode() != null) {
+
+answerDetails.setAnswerId(ansItemList.getCode()
+
+);
+
+{
+
+} else
+
+answerDetails.setAnswerId(ansItemList.getName() );
+
+}
+
+});
+
+}
+
+iosInfo.getSelectedAnswers().add(answerDetails) ;
+
+}
+
+}
+
+});
+
+}
+
+log.info("iop
+
+iosInfo.getSelectedAnswers():: {}", iosInfo.getSelectedAnswers ().size());
+
+IOPQuestionnaires
+
+rtaWapiQuestionnairesResponse = rtaQuestionnaires CompletableFuture.get();
+
+if
+
+(rtaWapiQuestionnairesResponse != null &&
+
+CollectionUtils.isNotEmpty(rtaWapiQuestionnaire
+
+sResponse.getQuestions())) { List<String>
+
+rtaQuestionIDSExcludeList = propertyUtil.getConfigListValue (IOS_QUESTION_ID EXCLUDE_LIST);
+
+List<String>
+
+iosQuestionIDSExcludeList Dates
+
+=
+
+propertyUtil.getConfigListValue(IOS_ANSWER_ID_E
+
+XCLUDE LIST_DATES);
+
+if(!iosQuestionIDS ExcludeList.contains(String.v alueOf(questList.getQuestCode()))
+
+rtaWapiQuestionnairesResponse.getQuestions().st
+
+ream().forEach(questList -> {
+
+if (!rtaQuestion IDSExclude List.contains(String.val ueOf(questList.getCode()))) {
+
+AnswerDetails
+
+answerDetails = new AnswerDetails();
+
+if (!questList.getCode().equalsIgnoreCase("dbs$ios
+
+_sign_dt") && !questList.getCode().equalsIgnoreCase("dbs$ios_ iop_rm_cf_dt")) { if
+
+(!iosQuestion IDSExclude ListDates.contains(Strin g.valueOf(questList.getCode()))) {
+
+answerDetails.setQuestionId(String.valueOf(ques tList.getCode())); if
+
+(questList.getAnswers() != null) {
+
+questList.getAnswers().stream().forEach(ansItem List -> {
+
+if
+
+(ansItemList.getCode() != null) {
+
+);
+
+answerDetails.setAnswerId (ansItemList.getCode());
+
+} else
+
+{
+
+answerDetails.setAnswerId (ansItemList.getName() );
+
+}
+
+});
+
+}
+
+ios Info.getSelectedAnswers().add(answerDetails)
+
+}
+
+}
+
+});
+
+}
+
+log.info("rta+iop
+
+questionnaries iosInfo.getSelectedAnswers()::
+
+{}", iosInfo.getSelectedAnswers ().size());
+
+List<String> wapiQIds = new
+
+if
+
+ArrayList<>();
+
+((iopWapiQuestionnaires Response.getQuestionnair
+
+eVersionCode() != null &&
+
+iopWapiQuestionnairesResponse.getQuestionnaireV ersionCode().equalsIgnoreCase (IOS_PROFILE_VERSI ON_CODE_2018))
+
+(rtaWapiQuestionnairesResponse.getQuestionnaire
+
+VersionCode() != null &&
+
+rtaWapiQuestionnairesResponse.getQuestionnaireV ersionCode().equalsIgnoreCase (IOS_PROFILE_VERSI ON_CODE_2018))) {
+
+if
+
+(iopWapiQuestionnairesResponse.getQuestionnaire VersionCode() != null) {
+
+iopQuestionnaires = iopWapiQuestionnairesResponse;
+
+IOPQuestionnaires
+
+iopQuestionnaires.getQuestions ().forEach (questi onItem ->
+
+wapiQIds.add(questionItem.getCode()));
+
+log.info("ios-iop
+
+Questionnaires are :: {}", iopQuestionnaires); }
+
+if (rtaWapiQuestionnairesResponse !=null && rtaWapiQuestionnairesResponse.getQuestionnaireV
+
+ersionCode () != null) {
+
+rtaQuestionnaires =
+
+IOPQuestionnaires
+
+rtaWapiQuestionnairesResponse;
+
+rtaQuestionnaires.getQuestions().forEach (questi onItem -> wapiQIds.add(questionItem.getCode())); log.info("ios-rta
+
+Questionnaires are
+
+:: {}", rtaQuestionnaires); } log.info("ios-iop
+
+Questionnaires wapiQIds is ::{}", wapiQIds);
+
+/*List<IOSSection>
+
+iosSectionList =
+
+locale.equalsIgnoreCase (Constants. LOCALE_ZH) ?
+
+iosSectionListEnV2022.getIosSectionsList().stre am().collect (Collectors.toList()) : am().collect(Collectors.toList());
+
+iosSectionListZhV2022.getIosSectionsList().stre
+
+Questionnaires before : {}", iosSectionList);
+
+ArrayList<>();
+
+log.info("ios-iop List<String> qIds = new
+
+iosSectionList.forEach(questionaire -> {
+
+List<IOSIKEQuestionnaireDetails> iosikeQuestionnaireList new ArrayList<>(); =
+
+questionaire.getQuestionaireList().forEach(ques tion -> {
+
+if (!question.getQuestionaireList().isEmpty()) {
+
+question.getQuestionaireList().forEach (childQue stion -> {
+
+if
+
+(wapiQIds.contains (childQuestion.getQuestionId( ))) {
+
+iosikeQuestionnaireList.add(childQuestion);
+
+}
+
+qIds.add(childQuestion.getQuestionId());
+
+});
+
+question.setQuestionaireList(iosikeQuestionnair eList); if
+
+(!iosikeQuestionnaireList.isEmpty()) {
+
+iosikeQuestionnairDetails.add(question);
+
+} } else {
+
+qIds.add(question.getQuestionId());
+
+if (wapiQIds.contains (question.getQuestionId())) {
+
+iosikeQuestionnairDetails.add(question);
+
+}
+
+}
+
+});
+
+questionaire.setQuestionaireList(iosikeQuestion nairDetails);
+
+}); log.info("ios-iop Questionnaire Ids :: {}", qIds);
+
+log.info("ios-iop
+
+:: {}",
+
+Questionnaires after
+
+iosSectionList);
+
+iosInfo.setIosSectionsListV_2022 (iosSectionList ); */
+
+}
+
+}
+
+if (StringUtils.isNotBlank (iopWapiQuestionnaires Response.getQuestionnaireVersionCode ( ) ) ) { log.info("iop version code : {
+
+iopWapiQuestionnairesResponse.getQuestionnairev ersionCode());
+
+switch
+
+(iopWapiQuestionnairesResponse.getQuestionnaire VersionCode().toLowerCase()) {
+
+case
+
+(IOS_PROFILE_VERSION_CODE_2022): {
+
+iosInfo.setShowCurrentProfile(true);
+
+iosInfo.setViewCurrentProfile(true);
+
+iosInfo.setKeepCurrentProfile(true);
+
+iosInfo.setPrintCurrentProfile(true);
+
+break;
+
+} case (IOS_PROFILE_VERSION_CODE_2018): { ios Info.setViewCurrentProfile(true); ios Info.setKeepCurrentProfile(false); iosInfo.setPrintCurrentProfile(true);
+
+break; }
+
+case
+
+(IOS_PROFILE_VERSION_CODE_2013): {
+
+iosInfo.setViewCurrentProfile(false);
+
+ios Info.setKeepCurrentProfile(false);
+
+ios Info.setPrintCurrentProfile(false);
+
+break;
+
+}
+
+}
+
+}
+
+iosikeDataResponse.setIos Info (ios Info); } catch (Exception e) {
+
+log.error("Error occured while getting ios info: {}", e.getMessage());, throw e;
+
+}
+
+} return iosikeDataResponse;
